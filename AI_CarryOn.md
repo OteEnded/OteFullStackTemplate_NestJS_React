@@ -26,8 +26,12 @@ history in `AI_ProgressTracking.md`.
   from the Fastify + React template, where Fastify served the React build).
 - Frontend learns the API origin from `Frontend/public/config.json` (`api.base_url`).
 - Backend allows the frontend origin via `cors.origins` in `Backend/config.json`.
-- Database (PostgreSQL via TypeORM) is **enabled by default**; tables live in the
-  `app_template` schema (auto-created on boot).
+- Database (PostgreSQL via TypeORM) is **enabled by default**. Schemas are
+  config-driven (`database.connection.schemas: { parent, project }`); `project`
+  is the default and is auto-created on boot. Per-table schema selection works
+  via `@Entity({ schema: SCHEMAS.project | SCHEMAS.parent })` (see
+  `Backend/src/database/schemas.ts`) — mirrors the Fastify `public`/`project`
+  split. Local config currently uses `project = template_builder`.
 - ORM is **TypeORM** (TS-first, idiomatic for Nest, entity-aware migrations). You
   are free to use **Sequelize** instead via the official `@nestjs/sequelize`
   package if you prefer it — the rest of the template is ORM-agnostic. See
@@ -44,7 +48,7 @@ history in `AI_ProgressTracking.md`.
 
 - `Backend/src/main.ts` — bootstrap (CORS, `/api` prefix, validation, Swagger, filters)
 - `Backend/src/config/configuration.ts` — config.json + env overrides
-- `Backend/src/database/` — TypeORM module, data-source, entities, seeds, migrations
+- `Backend/src/database/` — TypeORM module, data-source, entities, seeds, migrations, `schemas.ts` (per-entity schema constant)
 - `Backend/src/modules/template-item/` — example resource to replace
 - `Backend/config.example.json` — committed config template
 - `Frontend/src/config.ts` — API base-URL resolution

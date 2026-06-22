@@ -21,8 +21,16 @@ export interface DbConnectionConfig {
   username: string;
   password: string;
   database: string;
-  /** Postgres schema the project tables live in (mirrors Sequelize schemas.project). */
-  schema: string;
+  /**
+   * Postgres schemas, mirroring the Fastify template's `schemas.parent` /
+   * `schemas.project`. `project` is the connection-level default for entities;
+   * an entity can opt into `parent` (or any schema) via `@Entity({ schema })`.
+   * See src/database/schemas.ts for the per-entity constant.
+   */
+  schemas: {
+    parent: string;
+    project: string;
+  };
 }
 
 export interface AppConfiguration {
@@ -141,7 +149,19 @@ export function loadAppConfig(): AppConfiguration {
         username: firstDefined(env.DATABASE_USER, fileConn.username, '') as string,
         password: firstDefined(env.DATABASE_PASSWORD, fileConn.password, '') as string,
         database: firstDefined(env.DATABASE_NAME, fileConn.database, '') as string,
-        schema: firstDefined(env.DATABASE_SCHEMA, fileConn.schema, 'public') as string,
+        schemas: {
+          parent: firstDefined(
+            env.DATABASE_SCHEMA_PARENT,
+            fileConn.schemas?.parent,
+            'public',
+          ) as string,
+          // DATABASE_SCHEMA keeps overriding the project schema (the main one).
+          project: firstDefined(
+            env.DATABASE_SCHEMA,
+            fileConn.schemas?.project,
+            'public',
+          ) as string,
+        },
       },
     },
   };

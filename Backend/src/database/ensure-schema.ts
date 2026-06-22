@@ -2,16 +2,21 @@ import { Client } from 'pg';
 import { AppConfiguration } from '../config/configuration';
 
 /**
- * Ensure the configured Postgres schema exists before TypeORM connects.
+ * Ensure every configured Postgres schema exists before TypeORM connects.
  *
- * TypeORM's synchronize will create tables, but a non-`public` schema must
- * already exist. This mirrors the Fastify template's explicit
- * `sequelize.createSchema(...)` step and is safe to run every boot.
+ * TypeORM's synchronize creates tables, but a non-`public` schema must already
+ * exist. This mirrors the Fastify template's explicit `sequelize.createSchema(...)`
+ * step and is safe to run every boot. It creates each distinct, non-`public`
+ * schema referenced in `database.connection.schemas` (parent + project), so
+ * per-entity `@Entity({ schema })` choices all have a home.
  */
 export async function ensureSchema(config: AppConfiguration): Promise<void> {
   const c = config.database.connection;
 
-  if (!c.schema || c.schema === 'public') {
+  const schemasToCreate = [...new Set([c.schemas.parent, c.schemas.project])]
+    .filter((s) => s && s !== 'public');
+
+  if (schemasToCreate.length === 0) {
     return;
   }
 
@@ -25,9 +30,11 @@ export async function ensureSchema(config: AppConfiguration): Promise<void> {
 
   await client.connect();
   try {
-    // Schema identifier is from local config, not user input; quote it defensively anyway.
-    const safeSchema = c.schema.replace(/"/g, '');
-    await client.query(`CREATE SCHEMA IF NOT EXISTS "${safeSchema}"`);
+    for (const schema of schemasToCreate) {
+      // Schema identifiers come from local config, not user input; quote defensively anyway.
+      const safeSchema = schema.replace(/"/g, '');
+      await client.query(`CREATE SCHEMA IF NOT EXISTS "${safeSchema}"`);
+    }
   } finally {
     await client.end();
   }

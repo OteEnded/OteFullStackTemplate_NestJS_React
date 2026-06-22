@@ -5,6 +5,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { SCHEMAS } from '../schemas';
 
 export const TEMPLATE_ITEM_STATUSES = ['draft', 'active', 'archived'] as const;
 export const TEMPLATE_ITEM_PRIORITIES = ['low', 'medium', 'high'] as const;
@@ -16,11 +17,14 @@ export type TemplateItemPriority = (typeof TEMPLATE_ITEM_PRIORITIES)[number];
  * Example domain entity. Mirrors the `template_items` table from the Fastify
  * template so the same React frontend works against either backend.
  *
- * Replace this with your real models when you start a project. The Postgres
- * schema these tables live in is set once at the connection level
- * (see typeorm-options.ts), not per-entity.
+ * Replace this with your real models when you start a project.
+ *
+ * Schema selection (mirrors the Fastify template's per-model `schema`):
+ * `schema: SCHEMAS.project` pins this table to the project schema. Switch to
+ * `SCHEMAS.parent` to put a table in the public/parent schema, or omit `schema`
+ * to inherit the connection-level default (which is also SCHEMAS.project).
  */
-@Entity({ name: 'template_items' })
+@Entity({ name: 'template_items', schema: SCHEMAS.project })
 export class TemplateItem {
   @PrimaryGeneratedColumn()
   id!: number;

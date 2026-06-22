@@ -21,7 +21,10 @@
             "username": "",
             "password": "",
             "database": "",
-            "schema": "public"
+            "schemas": {
+                "parent": "public",
+                "project": "public"
+            }
         }
     }
 }

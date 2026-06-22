@@ -38,3 +38,21 @@ appending entries here and treat everything below as the starting point.
 - Removed all Docker tooling per Ote's decision (no Dockerfiles, no
   docker-compose, no nginx.conf). Production runs the compiled build directly
   (`npm run build` + `npm run start:prod`). Docs updated accordingly.
+
+---
+
+### 2026-06-22 — Config-driven per-entity schema (public/project split)
+
+- Replaced `database.connection.schema` (single string) with
+  `database.connection.schemas: { parent, project }`, mirroring the Fastify
+  template. `project` is the connection-level default schema.
+- Added `src/database/schemas.ts` exporting a `SCHEMAS` constant (resolved from
+  config at import time) so entities can pick a schema per table via
+  `@Entity({ schema: SCHEMAS.project | SCHEMAS.parent })`. The example
+  `TemplateItem` now sets `schema: SCHEMAS.project` explicitly.
+- `ensure-schema.ts` now creates every configured non-`public` schema on boot.
+- Updated `configuration.ts` types/loader (env: `DATABASE_SCHEMA` = project,
+  `DATABASE_SCHEMA_PARENT` = parent), `typeorm-options.ts`, `.env.example`, and
+  README/AI docs.
+- Verified: build clean; seed re-ran; `template_items` confirmed in the
+  `template_builder` schema with no leak into `public`.

@@ -64,10 +64,28 @@ committed template.
 | `database.connection.username`        | `DATABASE_USER`                 | `""`               |
 | `database.connection.password`        | `DATABASE_PASSWORD`             | `""`               |
 | `database.connection.database`        | `DATABASE_NAME`                 | `""`               |
-| `database.connection.schema`          | `DATABASE_SCHEMA`               | `public`           |
+| `database.connection.schemas.project` | `DATABASE_SCHEMA`               | `public`           |
+| `database.connection.schemas.parent`  | `DATABASE_SCHEMA_PARENT`        | `public`           |
 
-See `.env.example` for the full list. A non-`public` schema is created
-automatically on boot (mirrors the Fastify template's explicit schema step).
+See `.env.example` for the full list. Every configured non-`public` schema is
+created automatically on boot (mirrors the Fastify template's explicit schema step).
+
+### Per-entity schema (`public` vs `project`)
+
+Like the Fastify template's `schemas.parent` / `schemas.project`, you choose a
+schema per table. `schemas.project` is the connection-level default, so entities
+that say nothing land there. To pin a specific table, set `schema` on its
+`@Entity()` using the `SCHEMAS` constant (`src/database/schemas.ts`):
+
+```ts
+import { SCHEMAS } from '../schemas';
+
+@Entity({ name: 'template_items', schema: SCHEMAS.project }) // project schema
+@Entity({ name: 'log_messages',  schema: SCHEMAS.parent  }) // public/parent schema
+```
+
+`SCHEMAS` is resolved from config.json at import time (decorators run before Nest
+DI exists), which is why it's a constant rather than read from `ConfigService`.
 
 ## Scripts
 
@@ -94,6 +112,7 @@ src/
     data-source.ts            standalone DataSource for the TypeORM CLI (migrations)
     typeorm-options.ts        single source of truth for connection options
     ensure-schema.ts          CREATE SCHEMA IF NOT EXISTS before connect
+    schemas.ts                SCHEMAS constant for per-entity @Entity({ schema })
     entities/                 TemplateItem (example)
     seeds/                    seed function + standalone reseed script
     migrations/               generated migrations
