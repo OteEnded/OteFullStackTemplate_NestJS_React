@@ -28,6 +28,10 @@ history in `AI_ProgressTracking.md`.
 - Backend allows the frontend origin via `cors.origins` in `Backend/config.json`.
 - Database (PostgreSQL via TypeORM) is **enabled by default**; tables live in the
   `app_template` schema (auto-created on boot).
+- ORM is **TypeORM** (TS-first, idiomatic for Nest, entity-aware migrations). You
+  are free to use **Sequelize** instead via the official `@nestjs/sequelize`
+  package if you prefer it — the rest of the template is ORM-agnostic. See
+  `Backend/README.md` ("ORM choice") for how to swap.
 - Example endpoints:
   - `GET /api/health` (real DB ping)
   - `GET /api/template/meta`

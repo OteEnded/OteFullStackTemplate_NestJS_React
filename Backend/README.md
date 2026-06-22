@@ -12,6 +12,21 @@ frontend is a separate app that calls this over HTTP + CORS).
 - Config via `config.json` with environment-variable overrides
 - Optional **cron** (`@nestjs/schedule`) and **WebSocket** (`socket.io`) scaffolds
 
+## ORM choice — TypeORM (you can use Sequelize instead)
+
+This template ships with **TypeORM** because it's the TS-first, idiomatic ORM for
+NestJS: entities are decorated classes (the model *is* the type), it integrates
+with Nest DI via `@InjectRepository`, and it has entity-aware migrations
+(`migration:generate`). That's why the example feature uses it.
+
+**It is not mandatory.** If you (the project implementer) prefer Sequelize — e.g.
+you already know it from the Fastify template — you can swap it in with the
+official **`@nestjs/sequelize`** package. You'd replace `@nestjs/typeorm` +
+`typeorm` with `@nestjs/sequelize` + `sequelize`, turn the entities into Sequelize
+models, and adjust `database.module.ts` and the example service. The rest of the
+template (config, CORS, validation, the `{ ok, data }` contract, scaffolds) is
+ORM-agnostic and stays the same. **Prisma** is another valid TS-first option.
+
 ## Quick start
 
 ```bash
