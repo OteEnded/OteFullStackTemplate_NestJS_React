@@ -1,0 +1,27 @@
+{
+    "app": {
+        "port": 3000
+    },
+    "cors": {
+        "origins": ["http://localhost:5173"]
+    },
+    "logging": {
+        "requests": true
+    },
+    "database": {
+        "enabled": true,
+        "synchronize": true,
+        "logging": false,
+        "seed": {
+            "template_items": true
+        },
+        "connection": {
+            "host": "127.0.0.1",
+            "port": 5432,
+            "username": "",
+            "password": "",
+            "database": "",
+            "schema": "public"
+        }
+    }
+}

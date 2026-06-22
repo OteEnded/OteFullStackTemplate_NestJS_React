@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+Backend/dist/
+Frontend/dist/
+
+# Local config & secrets
+config.json
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# Template-maintainer notes (local only)
+AI_TemplateCreation.md
+
+# Editor / OS
+.history/
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.sw?

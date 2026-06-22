@@ -1,0 +1,12 @@
+{
+  "app": {
+    "name": "FullStack Template",
+    "subtitle": "React + Vite frontend calling a separate NestJS + TypeORM API."
+  },
+  "api": {
+    "base_url": "http://localhost:3000"
+  },
+  "_comments": {
+    "api.base_url": "The frontend and backend run on separate origins. Point this at the NestJS server (default http://localhost:3000). Leave empty only if you put the API behind the same origin (e.g. a reverse proxy or Vite dev proxy)."
+  }
+}

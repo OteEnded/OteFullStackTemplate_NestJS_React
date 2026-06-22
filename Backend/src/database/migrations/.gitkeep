@@ -1,0 +1,13 @@
+# TypeORM migrations live here.
+#
+# Generate one after changing entities (with the app NOT relying on synchronize):
+#   npm run migration:generate -- src/database/migrations/InitSchema
+#
+# Apply pending migrations:
+#   npm run migration:run
+#
+# Revert the last migration:
+#   npm run migration:revert
+#
+# In production, set DATABASE_SYNCHRONIZE=false and use migrations instead of
+# auto-sync so schema changes are explicit and reviewable.
