@@ -9,7 +9,9 @@ frontend is a separate app that calls this over HTTP + CORS).
 - **TypeORM 0.3** + **PostgreSQL** (`pg`), with **migrations**
 - **class-validator / class-transformer** for request validation
 - **JWT auth** example module (`@nestjs/jwt` + bcryptjs)
-- **Jest** unit tests
+- **Health checks** via `@nestjs/terminus` (`/api/health`, real DB ping)
+- **Structured logging** via `nestjs-pino` (pretty in dev, JSON in prod)
+- **Jest** unit tests + **supertest** e2e tests
 - **Swagger** API docs at `/api/docs`
 - Config via `config.json` with environment-variable overrides
 - Optional **cron** (`@nestjs/schedule`) and **WebSocket** (`socket.io`) scaffolds
@@ -113,8 +115,9 @@ This mirrors the Fastify template's log tables (uuid PK + `rolling_id`).
 | `npm run build`              | Compile TypeScript to `dist/`                        |
 | `npm run start:prod`         | Run the compiled build (`node dist/main.js`)          |
 | `npm run seed`               | Reset + reseed the example `template_items` rows      |
-| `npm test`                   | Run the Jest unit tests                              |
-| `npm run test:cov`           | Tests with coverage                                  |
+| `npm test`                   | Run the Jest unit tests (no DB needed)               |
+| `npm run test:cov`           | Unit tests with coverage                             |
+| `npm run test:e2e`           | Run supertest e2e tests (needs a running, migrated DB) |
 | `npm run migration:generate -- src/database/migrations/Name` | Generate a migration from entity changes |
 | `npm run migration:run`      | Apply pending migrations                              |
 | `npm run migration:revert`   | Revert the last migration                            |
@@ -139,13 +142,19 @@ src/
   modules/
     template-item/            example resource: controller, service, DTOs, seeder, spec
     auth/                     JWT auth example: controller, service, guard, seeder, spec
-    health/                   /api/health (DB ping) + /api/template/meta
+    health/                   terminus /api/health (DB ping) + /api/template/meta
   common/
-    interceptors/             response wrapper ({ ok, data }) + request logging
+    interceptors/             response wrapper ({ ok, data })
     filters/                  error wrapper ({ ok:false, message })
     cron/                     @nestjs/schedule scaffold
     websocket/                socket.io gateway scaffold
+test/
+  app.e2e-spec.ts             supertest e2e (boots the app; needs a DB)
+  jest-e2e.json
 ```
+
+Request logging is handled by `nestjs-pino` (configured in `app.module.ts`), not
+an interceptor.
 
 ## API response contract
 
@@ -202,5 +211,6 @@ Other production notes:
 
 - Inject secrets (DB password, `AUTH_JWT_SECRET`) via environment variables, not `config.json`.
 - Keep the process alive with pm2, systemd, or your platform's service runner.
-- For structured production logs, swap Nest's `Logger` for
-  [`nestjs-pino`](https://github.com/iamolegga/nestjs-pino).
+- Logging uses `nestjs-pino`: pretty/human-readable when `NODE_ENV` is not
+  `production`, raw JSON (ready for log shippers) in production. Request
+  auto-logging follows `logging.requests`; auth headers/passwords are redacted.

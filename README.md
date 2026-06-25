@@ -13,8 +13,9 @@ communicate over HTTP with CORS. This mirrors how most production teams deploy
 - **Backend:** NestJS 11, TypeORM 0.3, PostgreSQL, class-validator, Swagger
 - **Frontend:** React 19 + Vite, React Router
 - **Database:** PostgreSQL (TypeORM, schema-scoped tables, migrations)
-- **Auth:** optional JWT example module (`@nestjs/jwt` + bcryptjs)
-- **Tests:** Jest unit tests (`npm test`)
+- **Auth:** optional JWT example module (`@nestjs/jwt` + bcryptjs) + a React login page
+- **Observability:** terminus health checks (`/api/health`) + pino structured logging
+- **Tests:** Jest unit tests + supertest e2e (`npm test` / `npm run test:e2e`)
 - **Config:** `config.json` + environment-variable overrides
 - **Prod:** `npm run build` → `npm run migration:run` → `npm run start:prod`
 - **Extras:** cron (`@nestjs/schedule`) and WebSocket (`socket.io`) scaffolds
@@ -85,6 +86,10 @@ Replace it with your real domain:
 - `Backend/src/modules/template-item/` — controller, service, DTOs, seeder
 - `Backend/src/database/entities/template-item.entity.ts` — entity
 - `Frontend/src/pages/ExampleItemsPage.tsx` — the UI
+
+There's also an optional **auth** example: `Backend/src/modules/auth/` (JWT) with a
+`Frontend/src/pages/LoginPage.tsx` login page (demo user `admin` / `changeme`).
+Remove both if your project doesn't need accounts.
 
 ## Suggested first changes for a new project
 

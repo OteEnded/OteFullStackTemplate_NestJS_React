@@ -3,16 +3,14 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Logger as PinoLogger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { AppConfiguration, loadAppConfig } from './config/configuration';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { ensureSchema } from './database/ensure-schema';
 
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
-
   // Mirror the Fastify template's explicit createSchema step: make sure the
   // configured Postgres schema exists before TypeORM tries to sync into it.
   const fileConfig = loadAppConfig();
@@ -20,7 +18,10 @@ async function bootstrap() {
     await ensureSchema(fileConfig);
   }
 
-  const app = await NestFactory.create(AppModule);
+  // bufferLogs so early logs are flushed through pino once it's ready.
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(PinoLogger));
+  const logger = new Logger('Bootstrap');
   const configService = app.get(ConfigService<AppConfiguration, true>);
 
   const appConfig = configService.get('app', { infer: true });
@@ -43,10 +44,8 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalInterceptors(
-    new LoggingInterceptor(configService),
-    new TransformInterceptor(),
-  );
+  // Request logging is handled by pino-http (see LoggerModule in AppModule).
+  app.useGlobalInterceptors(new TransformInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
 
   // Interactive API docs at /api/docs (Swagger UI). DTOs are documented

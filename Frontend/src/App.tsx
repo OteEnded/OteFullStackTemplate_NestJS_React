@@ -1,6 +1,7 @@
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import ExampleItemsPage from './pages/ExampleItemsPage';
+import LoginPage from './pages/LoginPage';
 import './index.css';
 
 export default function App() {
@@ -27,11 +28,15 @@ export default function App() {
             <NavLink to="/items" className={({ isActive }) => isActive ? 'app-nav-link active' : 'app-nav-link'}>
               Example Items
             </NavLink>
+            <NavLink to="/login" className={({ isActive }) => isActive ? 'app-nav-link active' : 'app-nav-link'}>
+              Auth
+            </NavLink>
           </nav>
 
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/items" element={<ExampleItemsPage />} />
+            <Route path="/login" element={<LoginPage />} />
           </Routes>
         </section>
       </main>

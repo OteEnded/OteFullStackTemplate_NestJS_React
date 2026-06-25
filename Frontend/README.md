@@ -53,5 +53,27 @@ npm run preview  # serve the production build locally
   (`Backend/config.json`) — `http://localhost:5173` by default.
 - `config.json` is fetched at runtime (not baked into the JS bundle), so you can
   repoint a built/deployed frontend at a different API by editing that one file.
-- Leave `base_url` empty only if you put the API behind the same origin (reverse
-  proxy, or the Vite dev proxy in `vite.config.ts`).
+
+### Two ways to reach the API
+
+**A. Cross-origin (default).** `api.base_url = "http://localhost:3000"`. The
+browser calls the API directly; the backend allows the frontend origin via CORS.
+Nothing else to configure.
+
+**B. Same-origin via Vite dev proxy (no CORS).** Prefer to avoid cross-origin in
+dev? Do both of these:
+
+1. In `Frontend/public/config.json`, set `"api.base_url": ""` — `apiUrl()` then
+   falls back to the current origin (the Vite dev server).
+2. In `Frontend/vite.config.ts`, uncomment the `server.proxy` block:
+   ```ts
+   server: {
+     host: true,
+     port: 5173,
+     proxy: { '/api': { target: 'http://localhost:3000', changeOrigin: true } },
+   },
+   ```
+
+Now `/api/...` requests hit Vite (`:5173`) and are proxied to the backend
+(`:3000`) — same origin, so CORS never applies. (This only affects `npm run dev`;
+a production static build still uses `api.base_url`.)

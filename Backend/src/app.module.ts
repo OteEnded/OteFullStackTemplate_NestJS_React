@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import configuration from './config/configuration';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { LoggerModule } from 'nestjs-pino';
+import configuration, { AppConfiguration } from './config/configuration';
 import { CronModule } from './common/cron/cron.module';
 import { WebsocketModule } from './common/websocket/websocket.module';
 import { DatabaseModule } from './database/database.module';
@@ -17,6 +18,26 @@ import { TemplateItemModule } from './modules/template-item/template-item.module
       // (via dotenv), so ConfigModule does not also manage env files.
       ignoreEnvFile: true,
       load: [configuration],
+    }),
+    // Structured logging via pino. Pretty, human-readable in dev; raw JSON in
+    // production. pino-http auto-logs each request when logging.requests is on.
+    LoggerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService<AppConfiguration, true>) => {
+        const logging = configService.get('logging', { infer: true });
+        const isProd = process.env.NODE_ENV === 'production';
+        return {
+          pinoHttp: {
+            level: isProd ? 'info' : 'debug',
+            autoLogging: logging.requests,
+            transport: isProd
+              ? undefined
+              : { target: 'pino-pretty', options: { singleLine: true } },
+            // Don't log secrets that may appear in auth requests.
+            redact: ['req.headers.authorization', 'req.body.password'],
+          },
+        };
+      },
     }),
     DatabaseModule,
     HealthModule,

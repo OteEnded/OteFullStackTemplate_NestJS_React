@@ -54,8 +54,15 @@ history in `AI_ProgressTracking.md`.
   `GET /api/auth/me` (protected via `JwtAuthGuard`). Demo user seeded on boot:
   `admin` / `changeme` (`auth.seed_demo_user`). Set `AUTH_JWT_SECRET` + disable
   demo user in production. Removable with the `User` entity.
-- **Tests:** `npm test` (Jest) — 11 unit tests (template-item service, health
-  controller, auth controller). No DB required (repos/services mocked).
+- **Health & logging:** `/api/health` uses `@nestjs/terminus` (real DB ping).
+  Logging is `nestjs-pino` (pretty in dev, JSON in prod; request auto-logging via
+  `logging.requests`; auth header/password redacted) — set up in `app.module.ts`,
+  wired in `main.ts` via `app.useLogger`.
+- **Tests:** `npm test` (Jest) — 10 unit tests (template-item service, health,
+  auth controller), no DB needed. `npm run test:e2e` — 5 supertest e2e tests that
+  boot the app (needs a running, migrated DB).
+- **Frontend auth:** `Frontend/src/pages/LoginPage.tsx` + `src/auth.ts` exercise
+  login + the protected `/me` route (token in localStorage).
 - Example endpoints:
   - `GET /api/health` (real DB ping)
   - `GET /api/template/meta`
@@ -79,20 +86,14 @@ history in `AI_ProgressTracking.md`.
 
 ## Verification State
 
-- Verified on 2026-06-22: backend builds, connects to PostgreSQL 17.7, creates the
-  configured schema, syncs/seeds, serves all endpoints with the `{ ok, data }`
-  contract. CORS preflight + GET confirmed for `http://localhost:5173`. Frontend
-  builds clean.
-- Verified on 2026-06-25: migration flow (`synchronize=false` → `migration:run`
-  creates tables → boot seeders populate) works against `template_builder`;
-  initial `InitSchema` migration applied; auth flow (register/login/me, 401/409/400)
-  works with demo user; `npm test` = 11 passing. Sandbox now has only the
-  `template_builder` schema (old `app_template` dropped).
+- The template baseline is verified working (backend build + `npm test` +
+  `npm run test:e2e`, migration → boot → seed, auth flow, CORS, frontend build).
+- Replace this section with verification notes for YOUR derived project.
 
 ## Git State
 
-- Not yet a git repository. Replace this section with the live git state when
-  the derived project begins.
+- Replace this section with your derived project's git state. (The template
+  baseline lives at `OteEnded/OteFullStackTemplate_NestJS_React`.)
 
 ## Commit Message Policy (suggested, matches the Fastify template)
 

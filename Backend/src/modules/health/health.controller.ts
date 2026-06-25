@@ -1,39 +1,33 @@
 import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import {
+  HealthCheck,
+  HealthCheckService,
+  TypeOrmHealthIndicator,
+} from '@nestjs/terminus';
 import { AppConfiguration } from '../../config/configuration';
 
 @Controller()
 export class HealthController {
   constructor(
-    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly health: HealthCheckService,
+    private readonly db: TypeOrmHealthIndicator,
     private readonly configService: ConfigService<AppConfiguration, true>,
   ) {}
 
   /**
-   * GET /api/health — liveness plus a real database connectivity check.
+   * GET /api/health — liveness plus a real database connectivity check via
+   * @nestjs/terminus. Returns 200 with each indicator's status, or 503 if a
+   * check fails. The database ping is skipped when the DB is disabled.
    */
   @Get('health')
-  async health() {
+  @HealthCheck()
+  check() {
     const dbEnabled = this.configService.get('database', { infer: true }).enabled;
-
-    let database: 'up' | 'down' | 'disabled' = 'disabled';
-    if (dbEnabled) {
-      try {
-        await this.dataSource.query('SELECT 1');
-        database = 'up';
-      } catch {
-        database = 'down';
-      }
-    }
-
-    return {
-      service: 'FullStack Template API (NestJS)',
-      status: database === 'down' ? 'degraded' : 'ok',
-      database,
-      timestamp: new Date().toISOString(),
-    };
+    const indicators = dbEnabled
+      ? [() => this.db.pingCheck('database', { timeout: 2000 })]
+      : [];
+    return this.health.check(indicators);
   }
 
   /**
