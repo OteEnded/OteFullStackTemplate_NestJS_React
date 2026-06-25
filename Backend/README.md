@@ -6,8 +6,10 @@ frontend is a separate app that calls this over HTTP + CORS).
 ## Stack
 
 - **NestJS 11** (Express platform)
-- **TypeORM 0.3** + **PostgreSQL** (`pg`)
+- **TypeORM 0.3** + **PostgreSQL** (`pg`), with **migrations**
 - **class-validator / class-transformer** for request validation
+- **JWT auth** example module (`@nestjs/jwt` + bcryptjs)
+- **Jest** unit tests
 - **Swagger** API docs at `/api/docs`
 - Config via `config.json` with environment-variable overrides
 - Optional **cron** (`@nestjs/schedule`) and **WebSocket** (`socket.io`) scaffolds
@@ -66,6 +68,9 @@ committed template.
 | `database.connection.database`        | `DATABASE_NAME`                 | `""`               |
 | `database.connection.schemas.project` | `DATABASE_SCHEMA`               | `public`           |
 | `database.connection.schemas.parent`  | `DATABASE_SCHEMA_PARENT`        | `public`           |
+| `auth.jwt_secret`                     | `AUTH_JWT_SECRET`               | `change-me-in-production` |
+| `auth.jwt_expires_in`                 | `AUTH_JWT_EXPIRES_IN`           | `1h`               |
+| `auth.seed_demo_user`                 | `AUTH_SEED_DEMO_USER`           | `true`             |
 
 See `.env.example` for the full list. Every configured non-`public` schema is
 created automatically on boot (mirrors the Fastify template's explicit schema step).
@@ -95,7 +100,9 @@ DI exists), which is why it's a constant rather than read from `ConfigService`.
 | `npm run build`              | Compile TypeScript to `dist/`                        |
 | `npm run start:prod`         | Run the compiled build (`node dist/main.js`)          |
 | `npm run seed`               | Reset + reseed the example `template_items` rows      |
-| `npm run migration:generate -- src/database/migrations/Name` | Generate a migration |
+| `npm test`                   | Run the Jest unit tests                              |
+| `npm run test:cov`           | Tests with coverage                                  |
+| `npm run migration:generate -- src/database/migrations/Name` | Generate a migration from entity changes |
 | `npm run migration:run`      | Apply pending migrations                              |
 | `npm run migration:revert`   | Revert the last migration                            |
 
@@ -113,11 +120,12 @@ src/
     typeorm-options.ts        single source of truth for connection options
     ensure-schema.ts          CREATE SCHEMA IF NOT EXISTS before connect
     schemas.ts                SCHEMAS constant for per-entity @Entity({ schema })
-    entities/                 TemplateItem (example)
+    entities/                 TemplateItem, User (example)
     seeds/                    seed function + standalone reseed script
-    migrations/               generated migrations
+    migrations/               InitSchema + generated migrations
   modules/
-    template-item/            example resource: controller, service, DTOs, seeder
+    template-item/            example resource: controller, service, DTOs, seeder, spec
+    auth/                     JWT auth example: controller, service, guard, seeder, spec
     health/                   /api/health (DB ping) + /api/template/meta
   common/
     interceptors/             response wrapper ({ ok, data }) + request logging
@@ -140,14 +148,46 @@ Endpoints:
 - `GET    /api/template-items?status=&limit=` — list example items
 - `POST   /api/template-items` — create (validated)
 - `PATCH  /api/template-items/:id` — partial update
+- `POST   /api/auth/register` — create a user
+- `POST   /api/auth/login` — returns `{ accessToken, user }`
+- `GET    /api/auth/me` — current user (protected; send `Authorization: Bearer <token>`)
 
-## Production notes
+## Authentication (example)
 
-- Set `DATABASE_SYNCHRONIZE=false` and use **migrations** in production. Auto-sync
-  is convenient for local dev but unsafe for real data.
-- Inject secrets via environment variables, not `config.json`.
-- Build and run the compiled app: `npm run build` then `npm run start:prod`
-  (`node dist/main.js`). Keep it alive with a process manager such as pm2,
-  systemd, or your platform's service runner.
+An optional JWT auth module lives in `src/modules/auth/`. It stores users
+(`User` entity, bcrypt-hashed passwords), issues JWTs on login, and protects
+routes with `JwtAuthGuard` (`@UseGuards(JwtAuthGuard)` + the `@CurrentUser()`
+param decorator). A demo user is seeded on boot when `auth.seed_demo_user` is on:
+
+```
+username: admin
+password: changeme
+```
+
+Set a strong `auth.jwt_secret` (or `AUTH_JWT_SECRET`) and turn off
+`auth.seed_demo_user` for production. Remove the whole `auth/` module and the
+`User` entity if your project doesn't need built-in accounts.
+
+## Migrations & production
+
+`synchronize` defaults to **`false`** — schema changes go through migrations, not
+auto-sync. An initial migration (`InitSchema`) that creates the example tables is
+included. Typical flows:
+
+- **First-time / CI / production:**
+  ```bash
+  npm run build
+  npm run migration:run     # create/upgrade tables
+  npm run start:prod        # node dist/main.js
+  ```
+- **After changing an entity:** `npm run migration:generate -- src/database/migrations/<Name>`, review it, then `npm run migration:run`.
+- **Local dev shortcut:** if you'd rather skip migrations while iterating, set
+  `DATABASE_SYNCHRONIZE=true` (or `database.synchronize` in config.json) to
+  auto-sync tables from entities. Keep it `false` for any real database.
+
+Other production notes:
+
+- Inject secrets (DB password, `AUTH_JWT_SECRET`) via environment variables, not `config.json`.
+- Keep the process alive with pm2, systemd, or your platform's service runner.
 - For structured production logs, swap Nest's `Logger` for
   [`nestjs-pino`](https://github.com/iamolegga/nestjs-pino).

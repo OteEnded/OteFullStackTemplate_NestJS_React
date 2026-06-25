@@ -1,7 +1,7 @@
 # AI_CarryOn.md
 
 > Purpose: short handoff for the project being built from this template.
-> Last updated: 2026-06-22
+> Last updated: 2026-06-25
 
 ## Current Goal
 
@@ -36,20 +36,33 @@ history in `AI_ProgressTracking.md`.
   are free to use **Sequelize** instead via the official `@nestjs/sequelize`
   package if you prefer it — the rest of the template is ORM-agnostic. See
   `Backend/README.md` ("ORM choice") for how to swap.
+- **Migrations:** `database.synchronize` defaults to **false**; schema changes go
+  through TypeORM migrations. An initial `InitSchema` migration (template_items +
+  users) is committed. Prod/CI flow: `build` → `migration:run` → `start:prod`.
+  Local dev can set `DATABASE_SYNCHRONIZE=true` to auto-sync instead.
+- **Auth (optional example):** JWT module in `Backend/src/modules/auth/`
+  (`@nestjs/jwt` + bcryptjs). Endpoints `POST /api/auth/register|login`,
+  `GET /api/auth/me` (protected via `JwtAuthGuard`). Demo user seeded on boot:
+  `admin` / `changeme` (`auth.seed_demo_user`). Set `AUTH_JWT_SECRET` + disable
+  demo user in production. Removable with the `User` entity.
+- **Tests:** `npm test` (Jest) — 11 unit tests (template-item service, health
+  controller, auth controller). No DB required (repos/services mocked).
 - Example endpoints:
   - `GET /api/health` (real DB ping)
   - `GET /api/template/meta`
   - `GET|POST /api/template-items`, `PATCH /api/template-items/:id`
+  - `POST /api/auth/register|login`, `GET /api/auth/me`
 - Swagger UI at `/api/docs`.
 - `npm run dev` (backend, watch) / `npm run dev` (frontend) / `run.bat` (both on Windows).
-- Production: `npm run build` then `npm run start:prod` (no Docker — removed per Ote's decision).
+- Production: `npm run build` → `npm run migration:run` → `npm run start:prod` (no Docker — removed per Ote's decision).
 
 ## Key Files
 
 - `Backend/src/main.ts` — bootstrap (CORS, `/api` prefix, validation, Swagger, filters)
 - `Backend/src/config/configuration.ts` — config.json + env overrides
-- `Backend/src/database/` — TypeORM module, data-source, entities, seeds, migrations, `schemas.ts` (per-entity schema constant)
+- `Backend/src/database/` — TypeORM module, data-source, entities (TemplateItem, User), seeds, migrations (InitSchema), `schemas.ts` (per-entity schema constant)
 - `Backend/src/modules/template-item/` — example resource to replace
+- `Backend/src/modules/auth/` — optional JWT auth example (remove if unused)
 - `Backend/config.example.json` — committed config template
 - `Frontend/src/config.ts` — API base-URL resolution
 - `Frontend/public/config.json` — runtime API origin
@@ -57,10 +70,15 @@ history in `AI_ProgressTracking.md`.
 
 ## Verification State
 
-- Verified on 2026-06-22: backend builds, connects to PostgreSQL 17.7, auto-creates
-  the `app_template` schema, syncs tables, seeds 3 example rows, and serves all
-  endpoints with the `{ ok, data }` contract. CORS preflight + GET confirmed for
-  `http://localhost:5173`. Frontend builds clean. `npm run seed` reset works.
+- Verified on 2026-06-22: backend builds, connects to PostgreSQL 17.7, creates the
+  configured schema, syncs/seeds, serves all endpoints with the `{ ok, data }`
+  contract. CORS preflight + GET confirmed for `http://localhost:5173`. Frontend
+  builds clean.
+- Verified on 2026-06-25: migration flow (`synchronize=false` → `migration:run`
+  creates tables → boot seeders populate) works against `template_builder`;
+  initial `InitSchema` migration applied; auth flow (register/login/me, 401/409/400)
+  works with demo user; `npm test` = 11 passing. Sandbox now has only the
+  `template_builder` schema (old `app_template` dropped).
 
 ## Git State
 

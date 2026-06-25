@@ -57,6 +57,14 @@ export interface AppConfiguration {
     };
     connection: DbConnectionConfig;
   };
+  auth: {
+    /** Secret used to sign/verify JWTs. MUST be overridden in production. */
+    jwtSecret: string;
+    /** Token lifetime, e.g. "1h", "7d". */
+    jwtExpiresIn: string;
+    /** Seed a demo user (admin / changeme) on boot so login works out of the box. */
+    seedDemoUser: boolean;
+  };
 }
 
 const CONFIG_FILE = 'config.json';
@@ -164,12 +172,30 @@ export function loadAppConfig(): AppConfiguration {
         },
       },
     },
+    auth: {
+      jwtSecret: firstDefined(
+        env.AUTH_JWT_SECRET,
+        file.auth?.jwt_secret,
+        'change-me-in-production',
+      ) as string,
+      jwtExpiresIn: firstDefined(
+        env.AUTH_JWT_EXPIRES_IN,
+        file.auth?.jwt_expires_in,
+        '1h',
+      ) as string,
+      seedDemoUser: firstDefined(
+        envBool(env.AUTH_SEED_DEMO_USER),
+        file.auth?.seed_demo_user,
+        true,
+      ) as boolean,
+    },
   };
 }
 
 /**
  * Factory consumed by `ConfigModule.forRoot({ load: [configuration] })`.
- * Exposes the resolved config under the `app`, `cors`, `logging`, `database` keys.
+ * Exposes the resolved config under the `app`, `cors`, `logging`, `database`,
+ * and `auth` keys.
  */
 export default function configuration(): AppConfiguration {
   return loadAppConfig();

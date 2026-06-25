@@ -24,6 +24,7 @@ import { buildDataSourceOptions } from './typeorm-options';
           cors: configService.get('cors', { infer: true }),
           logging: configService.get('logging', { infer: true }),
           database: configService.get('database', { infer: true }),
+          auth: configService.get('auth', { infer: true }),
         };
         return buildDataSourceOptions(config);
       },

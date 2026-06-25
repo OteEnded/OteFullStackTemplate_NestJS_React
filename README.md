@@ -12,9 +12,11 @@ communicate over HTTP with CORS. This mirrors how most production teams deploy
 
 - **Backend:** NestJS 11, TypeORM 0.3, PostgreSQL, class-validator, Swagger
 - **Frontend:** React 19 + Vite, React Router
-- **Database:** PostgreSQL (TypeORM, schema-scoped tables, optional migrations)
+- **Database:** PostgreSQL (TypeORM, schema-scoped tables, migrations)
+- **Auth:** optional JWT example module (`@nestjs/jwt` + bcryptjs)
+- **Tests:** Jest unit tests (`npm test`)
 - **Config:** `config.json` + environment-variable overrides
-- **Prod:** `npm run build` + `npm run start:prod`, env-var config, TypeORM migrations
+- **Prod:** `npm run build` → `npm run migration:run` → `npm run start:prod`
 - **Extras:** cron (`@nestjs/schedule`) and WebSocket (`socket.io`) scaffolds
 
 ## Layout
@@ -34,8 +36,11 @@ AI_CarryOn.md / AI_ProgressTracking.md / AI_TemplateCreation.md
    npm install
    cp config.example.json config.json      # PowerShell: Copy-Item config.example.json config.json
    # edit config.json -> database.connection
+   npm run migration:run                     # create tables (synchronize is off by default)
    npm run dev                               # http://localhost:3000/api
    ```
+   (Prefer auto-sync while prototyping? Set `database.synchronize: true` in
+   config.json and skip the migration step.)
 2. **Frontend** (new terminal)
    ```bash
    cd Frontend
@@ -61,12 +66,15 @@ On Windows you can also double-click **`run.bat`** to launch both at once.
 ## Database
 
 - Enabled by default (this template is built around TypeORM + Postgres).
-- Tables live in a configurable Postgres **schema** (`app_template` by default),
-  created automatically on boot.
-- The example `template_items` rows are seeded on boot (idempotent) and can be
-  reset with `npm run seed`.
-- For production, turn off `database.synchronize` and use **migrations**
-  (`npm run migration:generate` / `migration:run`).
+- Tables live in a configurable Postgres **schema** (`schemas.project`), created
+  automatically on boot. Tables can opt into a different schema per entity (see
+  `Backend/README.md` → "Per-entity schema").
+- **Migrations by default:** `database.synchronize` defaults to `false`, so schema
+  changes go through migrations. An initial `InitSchema` migration is included —
+  run `npm run migration:run` to create the tables. (For quick local iteration you
+  can set `DATABASE_SYNCHRONIZE=true` to auto-sync from entities instead.)
+- The example `template_items` rows (and a demo auth user) are seeded on boot
+  (idempotent); `template_items` can be reset with `npm run seed`.
 
 ## Included example feature
 

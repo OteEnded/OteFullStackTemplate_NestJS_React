@@ -56,3 +56,31 @@ appending entries here and treat everything below as the starting point.
   README/AI docs.
 - Verified: build clean; seed re-ran; `template_items` confirmed in the
   `template_builder` schema with no leak into `public`.
+
+---
+
+### 2026-06-25 — Auth module, Jest tests, migrations/prod hardening, tidy-ups
+
+- **Tidy:** added `.gitattributes` (text=auto eol=lf; `.bat` stays CRLF) and
+  renormalized — removes the CRLF warnings. Added npm `overrides: { multer: ^2.2.0 }`,
+  clearing the 8 high-severity multer advisories that cascaded across `@nestjs/*`.
+  Remaining: 2 moderate `js-yaml` via @nestjs/swagger (accepted — Swagger doesn't
+  parse untrusted YAML); Jest dev tooling adds more `js-yaml` instances but
+  `npm audit --omit=dev` (what ships) stays at 2 moderate.
+- **Auth example:** new `src/modules/auth/` — `User` entity (bcryptjs hash),
+  `@nestjs/jwt`, `AuthService`, `AuthController` (register / login / me),
+  `JwtAuthGuard` (no Passport), `@CurrentUser()` decorator, demo-user seeder
+  (admin/changeme, gated by `auth.seed_demo_user`). Config gained an `auth` block
+  (jwt_secret, jwt_expires_in, seed_demo_user) + env overrides. Removable.
+- **Tests:** Jest + ts-jest; specs for template-item service (mocked repo),
+  health controller (mocked DataSource/ConfigService), auth controller (mocked
+  service + overridden guard). 11 tests, all passing, no DB needed.
+- **Migrations / prod hardening:** `database.synchronize` now defaults **false**
+  in both config files. Generated `InitSchema` migration (template_items + users,
+  unique username index). Verified end-to-end: empty schema → `migration:run`
+  creates tables → boot seeders populate → auth + items work. CLI uses
+  `data-source.ts`. README documents build → migration:run → start:prod.
+- **Tidy DB:** dropped the leftover `app_template` schema; sandbox now only has
+  `template_builder`.
+- Verified: `nest build` clean; `npm test` 11/11; full live API smoke (health,
+  items CRUD, auth) green.

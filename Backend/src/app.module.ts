@@ -4,6 +4,7 @@ import configuration from './config/configuration';
 import { CronModule } from './common/cron/cron.module';
 import { WebsocketModule } from './common/websocket/websocket.module';
 import { DatabaseModule } from './database/database.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { TemplateItemModule } from './modules/template-item/template-item.module';
 
@@ -20,6 +21,8 @@ import { TemplateItemModule } from './modules/template-item/template-item.module
     DatabaseModule,
     HealthModule,
     TemplateItemModule,
+    // Optional auth example (JWT). Remove with the User entity if not needed.
+    AuthModule,
     // Optional scaffolds (parity with the Fastify template). Remove if unused.
     CronModule,
     WebsocketModule,
