@@ -3,7 +3,7 @@ import {
   Controller,
   Get,
   Param,
-  ParseIntPipe,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
@@ -17,7 +17,7 @@ import { TemplateItemService } from './template-item.service';
  * Example REST resource. With the global `api` prefix this is served at:
  *   GET    /api/template-items
  *   POST   /api/template-items
- *   PATCH  /api/template-items/:id
+ *   PATCH  /api/template-items/:uuid
  *
  * Responses are wrapped as `{ ok: true, data }` by the global
  * TransformInterceptor, matching the contract the React frontend expects.
@@ -36,11 +36,11 @@ export class TemplateItemController {
     return this.service.create(dto);
   }
 
-  @Patch(':id')
+  @Patch(':uuid')
   update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() dto: UpdateTemplateItemDto,
   ) {
-    return this.service.update(id, dto);
+    return this.service.update(uuid, dto);
   }
 }

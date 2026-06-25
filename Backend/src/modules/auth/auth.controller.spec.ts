@@ -9,13 +9,15 @@ import { JwtAuthGuard } from './jwt-auth.guard';
  */
 describe('AuthController', () => {
   let controller: AuthController;
-  let auth: jest.Mocked<Pick<AuthService, 'register' | 'login' | 'findById'>>;
+  let auth: jest.Mocked<Pick<AuthService, 'register' | 'login' | 'findByUuid'>>;
+
+  const UUID = '22222222-2222-2222-2222-222222222222';
 
   beforeEach(async () => {
     auth = {
       register: jest.fn(),
       login: jest.fn(),
-      findById: jest.fn(),
+      findByUuid: jest.fn(),
     };
 
     const moduleRef = await Test.createTestingModule({
@@ -30,7 +32,7 @@ describe('AuthController', () => {
   });
 
   it('register delegates to AuthService.register', async () => {
-    auth.register.mockResolvedValue({ id: 1, username: 'alice', createdAt: new Date() });
+    auth.register.mockResolvedValue({ uuid: UUID, rollingId: 1, username: 'alice', createdAt: new Date() });
     await controller.register({ username: 'alice', password: 'secret123' });
     expect(auth.register).toHaveBeenCalledWith({ username: 'alice', password: 'secret123' });
   });
@@ -38,16 +40,16 @@ describe('AuthController', () => {
   it('login delegates to AuthService.login', async () => {
     auth.login.mockResolvedValue({
       accessToken: 'tok',
-      user: { id: 1, username: 'alice', createdAt: new Date() },
+      user: { uuid: UUID, rollingId: 1, username: 'alice', createdAt: new Date() },
     });
     const res = await controller.login({ username: 'alice', password: 'secret123' });
     expect(res.accessToken).toBe('tok');
   });
 
   it('me() resolves the user from the token payload', async () => {
-    auth.findById.mockResolvedValue({ id: 7, username: 'bob', createdAt: new Date() });
-    const res = await controller.me({ sub: 7, username: 'bob' });
-    expect(auth.findById).toHaveBeenCalledWith(7);
+    auth.findByUuid.mockResolvedValue({ uuid: UUID, rollingId: 7, username: 'bob', createdAt: new Date() });
+    const res = await controller.me({ sub: UUID, username: 'bob' });
+    expect(auth.findByUuid).toHaveBeenCalledWith(UUID);
     expect(res.username).toBe('bob');
   });
 });

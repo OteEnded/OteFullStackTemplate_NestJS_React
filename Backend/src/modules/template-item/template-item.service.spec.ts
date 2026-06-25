@@ -31,8 +31,10 @@ describe('TemplateItemService', () => {
     service = moduleRef.get(TemplateItemService);
   });
 
+  const UUID = '11111111-1111-1111-1111-111111111111';
+
   it('findAll applies the status filter, ordering, and limit', async () => {
-    repo.find.mockResolvedValue([{ id: 1 } as TemplateItem]);
+    repo.find.mockResolvedValue([{ uuid: UUID } as TemplateItem]);
 
     const rows = await service.findAll({ status: 'active', limit: 10 });
 
@@ -46,7 +48,7 @@ describe('TemplateItemService', () => {
 
   it('create applies defaults for omitted fields', async () => {
     repo.create.mockImplementation((dto) => dto as TemplateItem);
-    repo.save.mockImplementation(async (row) => ({ id: 1, ...(row as object) }) as TemplateItem);
+    repo.save.mockImplementation(async (row) => ({ uuid: UUID, ...(row as object) }) as TemplateItem);
 
     await service.create({ name: 'Demo' });
 
@@ -61,21 +63,21 @@ describe('TemplateItemService', () => {
   it('update throws NotFound when the row is missing', async () => {
     repo.findOne.mockResolvedValue(null);
 
-    await expect(service.update(999, { name: 'x' })).rejects.toBeInstanceOf(
+    await expect(service.update(UUID, { name: 'x' })).rejects.toBeInstanceOf(
       NotFoundException,
     );
   });
 
   it('update merges changes and saves', async () => {
-    const existing = { id: 1, name: 'Old', status: 'draft' } as TemplateItem;
+    const existing = { uuid: UUID, name: 'Old', status: 'draft' } as TemplateItem;
     repo.findOne.mockResolvedValue(existing);
     repo.save.mockImplementation(async (row) => row as TemplateItem);
 
-    const result = await service.update(1, { name: 'New' });
+    const result = await service.update(UUID, { name: 'New' });
 
     expect(result.name).toBe('New');
     expect(repo.save).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 1, name: 'New' }),
+      expect.objectContaining({ uuid: UUID, name: 'New' }),
     );
   });
 });

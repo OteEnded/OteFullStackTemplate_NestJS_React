@@ -11,12 +11,14 @@ import { User } from '../../database/entities/user.entity';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 
 export interface JwtPayload {
-  sub: number;
+  /** The user's uuid (primary key). */
+  sub: string;
   username: string;
 }
 
 export interface PublicUser {
-  id: number;
+  uuid: string;
+  rollingId: number;
   username: string;
   createdAt: Date;
 }
@@ -57,14 +59,14 @@ export class AuthService {
       throw new UnauthorizedException('invalid credentials');
     }
 
-    const payload: JwtPayload = { sub: user.id, username: user.username };
+    const payload: JwtPayload = { sub: user.uuid, username: user.username };
     const accessToken = await this.jwt.signAsync(payload);
 
     return { accessToken, user: this.toPublic(user) };
   }
 
-  async findById(id: number): Promise<PublicUser> {
-    const user = await this.users.findOne({ where: { id } });
+  async findByUuid(uuid: string): Promise<PublicUser> {
+    const user = await this.users.findOne({ where: { uuid } });
     if (!user) {
       throw new UnauthorizedException('user no longer exists');
     }
@@ -72,6 +74,11 @@ export class AuthService {
   }
 
   private toPublic(user: User): PublicUser {
-    return { id: user.id, username: user.username, createdAt: user.createdAt };
+    return {
+      uuid: user.uuid,
+      rollingId: user.rollingId,
+      username: user.username,
+      createdAt: user.createdAt,
+    };
   }
 }

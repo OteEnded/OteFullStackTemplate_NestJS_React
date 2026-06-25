@@ -1,25 +1,16 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  Index,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, Entity, Index } from 'typeorm';
+import { BaseEntity } from './base.entity';
 import { SCHEMAS } from '../schemas';
 
 /**
  * Auth example entity. Stores a username and a bcrypt password hash.
- * Lives in the project schema (same as TemplateItem).
+ * Inherits `uuid` (PK), `rollingId`, `createdAt`, `updatedAt` from BaseEntity.
  *
  * Part of the optional auth example — remove with the rest of the auth module
  * if your project doesn't need built-in user accounts.
  */
 @Entity({ name: 'users', schema: SCHEMAS.project })
-export class User {
-  @PrimaryGeneratedColumn()
-  id!: number;
-
+export class User extends BaseEntity {
   @Index({ unique: true })
   @Column({ type: 'varchar', length: 255 })
   username!: string;
@@ -27,10 +18,4 @@ export class User {
   /** bcrypt hash — never the plaintext password. Excluded from API responses. */
   @Column({ type: 'varchar', length: 255, select: false })
   passwordHash!: string;
-
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-  createdAt!: Date;
-
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
-  updatedAt!: Date;
 }

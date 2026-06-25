@@ -92,6 +92,19 @@ import { SCHEMAS } from '../schemas';
 `SCHEMAS` is resolved from config.json at import time (decorators run before Nest
 DI exists), which is why it's a constant rather than read from `ConfigService`.
 
+### Entity keys (uuid + rollingId)
+
+All entities extend `BaseEntity` (`src/database/entities/base.entity.ts`):
+
+- **`uuid`** — the primary key, a random UUID via Postgres' built-in
+  `gen_random_uuid()` (no extension needed). Use it as the external identifier;
+  routes take `:uuid` (validated with `ParseUUIDPipe`).
+- **`rollingId`** — an auto-increment integer kept as a unique secondary index
+  (cheap, monotonic, good for ordering/human-friendly references) — **not** the PK.
+- **`createdAt` / `updatedAt`** — managed timestamps.
+
+This mirrors the Fastify template's log tables (uuid PK + `rolling_id`).
+
 ## Scripts
 
 | Command                      | What it does                                         |
@@ -120,7 +133,7 @@ src/
     typeorm-options.ts        single source of truth for connection options
     ensure-schema.ts          CREATE SCHEMA IF NOT EXISTS before connect
     schemas.ts                SCHEMAS constant for per-entity @Entity({ schema })
-    entities/                 TemplateItem, User (example)
+    entities/                 base.entity (uuid PK + rollingId), TemplateItem, User
     seeds/                    seed function + standalone reseed script
     migrations/               InitSchema + generated migrations
   modules/
@@ -147,7 +160,7 @@ Endpoints:
 - `GET    /api/template/meta` — stack metadata for the frontend
 - `GET    /api/template-items?status=&limit=` — list example items
 - `POST   /api/template-items` — create (validated)
-- `PATCH  /api/template-items/:id` — partial update
+- `PATCH  /api/template-items/:uuid` — partial update
 - `POST   /api/auth/register` — create a user
 - `POST   /api/auth/login` — returns `{ accessToken, user }`
 - `GET    /api/auth/me` — current user (protected; send `Authorization: Bearer <token>`)

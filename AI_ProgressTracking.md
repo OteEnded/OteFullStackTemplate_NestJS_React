@@ -84,3 +84,23 @@ appending entries here and treat everything below as the starting point.
   `template_builder`.
 - Verified: `nest build` clean; `npm test` 11/11; full live API smoke (health,
   items CRUD, auth) green.
+
+---
+
+### 2026-06-25 — UUID primary keys + rolling id; CLAUDE.md ports onboarding
+
+- All entities now extend a new `BaseEntity`: `uuid` PK (Postgres
+  `gen_random_uuid()`, no extension), auto-increment `rollingId` (unique
+  secondary index), `createdAt`/`updatedAt`. Mirrors the Fastify log tables
+  (uuid PK + rolling_id). Replaced the old numeric `id` PK everywhere
+  (service/controller use `:uuid` + ParseUUIDPipe; auth JWT `sub` = uuid;
+  PublicUser exposes uuid + rollingId; frontend ExampleItemsPage keyed on uuid,
+  shows rollingId). Regenerated `InitSchema` migration accordingly.
+- Added `CLAUDE.md` at repo root: instructs AI assistants to confirm the backend
+  (3000) and frontend (5173) ports with the dev BEFORE other work, and maps each
+  port to the exact files to update (Backend/config.json app.port + cors.origins,
+  Frontend/public/config.json api.base_url, Frontend/vite.config.ts server.port,
+  plus the *.example.json mirrors).
+- Verified: backend build + 11 tests pass; frontend build clean; migration
+  recreates uuid/rollingId tables; live smoke — items have uuid + rollingId,
+  create returns both, PATCH by uuid works, bad uuid → 400, login/me use uuid.

@@ -26,8 +26,8 @@ export class TemplateItemService {
     });
   }
 
-  async findOne(id: number): Promise<TemplateItem> {
-    const row = await this.repo.findOne({ where: { id } });
+  async findOne(uuid: string): Promise<TemplateItem> {
+    const row = await this.repo.findOne({ where: { uuid } });
     if (!row) {
       throw new NotFoundException('item not found');
     }
@@ -44,8 +44,8 @@ export class TemplateItemService {
     return this.repo.save(row);
   }
 
-  async update(id: number, dto: UpdateTemplateItemDto): Promise<TemplateItem> {
-    const row = await this.findOne(id);
+  async update(uuid: string, dto: UpdateTemplateItemDto): Promise<TemplateItem> {
+    const row = await this.findOne(uuid);
     Object.assign(row, dto);
     return this.repo.save(row);
   }

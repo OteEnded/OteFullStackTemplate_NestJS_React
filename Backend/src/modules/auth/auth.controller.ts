@@ -28,6 +28,6 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: JwtPayload) {
-    return this.auth.findById(user.sub);
+    return this.auth.findByUuid(user.sub);
   }
 }

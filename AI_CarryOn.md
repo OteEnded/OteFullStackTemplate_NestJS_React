@@ -18,6 +18,12 @@ Suggested starting content:
 Use this file for short, high-signal handoff notes only. Put long implementation
 history in `AI_ProgressTracking.md`.
 
+## Onboarding (for AI coding assistants)
+
+- **First, confirm server ports with the dev** (backend default 3000, frontend
+  default 5173) before doing other work, then apply any change across the config
+  files. Full instructions + the port→file map are in `CLAUDE.md` at the repo root.
+
 ## Template Baseline
 
 - `Backend/` is a standalone NestJS + TypeORM API (port 3000, routes under `/api`).
@@ -32,6 +38,9 @@ history in `AI_ProgressTracking.md`.
   via `@Entity({ schema: SCHEMAS.project | SCHEMAS.parent })` (see
   `Backend/src/database/schemas.ts`) — mirrors the Fastify `public`/`project`
   split. Local config currently uses `project = template_builder`.
+- **Entity keys:** all entities extend `BaseEntity` — `uuid` primary key
+  (`gen_random_uuid()`, no extension) + auto-increment `rollingId` (unique
+  secondary index) + `createdAt`/`updatedAt`. Routes use `:uuid` (ParseUUIDPipe).
 - ORM is **TypeORM** (TS-first, idiomatic for Nest, entity-aware migrations). You
   are free to use **Sequelize** instead via the official `@nestjs/sequelize`
   package if you prefer it — the rest of the template is ORM-agnostic. See

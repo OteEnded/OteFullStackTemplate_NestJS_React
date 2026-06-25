@@ -54,7 +54,7 @@ export async function seedTemplateItems(
     const existing = await repo.findOne({ where: { name: item.name } });
     if (existing) {
       if (forceSync) {
-        await repo.update(existing.id, item);
+        await repo.update(existing.uuid, item);
         updated += 1;
       }
     } else {

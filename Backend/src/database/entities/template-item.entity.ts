@@ -1,10 +1,5 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, Entity } from 'typeorm';
+import { BaseEntity } from './base.entity';
 import { SCHEMAS } from '../schemas';
 
 export const TEMPLATE_ITEM_STATUSES = ['draft', 'active', 'archived'] as const;
@@ -14,10 +9,9 @@ export type TemplateItemStatus = (typeof TEMPLATE_ITEM_STATUSES)[number];
 export type TemplateItemPriority = (typeof TEMPLATE_ITEM_PRIORITIES)[number];
 
 /**
- * Example domain entity. Mirrors the `template_items` table from the Fastify
- * template so the same React frontend works against either backend.
- *
- * Replace this with your real models when you start a project.
+ * Example domain entity. Replace this with your real models when you start a
+ * project. Inherits `uuid` (PK), `rollingId`, `createdAt`, `updatedAt` from
+ * BaseEntity.
  *
  * Schema selection (mirrors the Fastify template's per-model `schema`):
  * `schema: SCHEMAS.project` pins this table to the project schema. Switch to
@@ -25,10 +19,7 @@ export type TemplateItemPriority = (typeof TEMPLATE_ITEM_PRIORITIES)[number];
  * to inherit the connection-level default (which is also SCHEMAS.project).
  */
 @Entity({ name: 'template_items', schema: SCHEMAS.project })
-export class TemplateItem {
-  @PrimaryGeneratedColumn()
-  id!: number;
-
+export class TemplateItem extends BaseEntity {
   @Column({ type: 'varchar', length: 255 })
   name!: string;
 
@@ -40,10 +31,4 @@ export class TemplateItem {
 
   @Column({ type: 'varchar', length: 32, default: 'medium' })
   priority!: TemplateItemPriority;
-
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
-  createdAt!: Date;
-
-  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
-  updatedAt!: Date;
 }
