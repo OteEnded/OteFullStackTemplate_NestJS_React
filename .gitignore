@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Lockfiles — each project generates its own via `npm install`
+package-lock.json
+
 # Build output
 dist/
 Backend/dist/
