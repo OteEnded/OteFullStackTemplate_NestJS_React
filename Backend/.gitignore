@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 dist/
+*.tsbuildinfo
 
 # Local config & secrets (keep config.example.json committed)
 config.json
