@@ -66,7 +66,7 @@ history in `AI_ProgressTracking.md`.
 - Example endpoints:
   - `GET /api/health` (real DB ping)
   - `GET /api/template/meta`
-  - `GET|POST /api/template-items`, `PATCH /api/template-items/:id`
+  - `GET|POST /api/template-items`, `POST /api/template-items/:uuid` (update) — REST surface is GET + POST only
   - `POST /api/auth/register|login`, `GET /api/auth/me`
 - Swagger UI at `/api/docs`.
 - `npm run dev` (backend, watch) / `npm run dev` (frontend) / `run.bat` (both on Windows).

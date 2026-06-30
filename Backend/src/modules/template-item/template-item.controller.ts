@@ -2,9 +2,10 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
-  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -16,8 +17,8 @@ import { TemplateItemService } from './template-item.service';
 /**
  * Example REST resource. With the global `api` prefix this is served at:
  *   GET    /api/template-items
- *   POST   /api/template-items
- *   PATCH  /api/template-items/:uuid
+ *   POST   /api/template-items          (create)
+ *   POST   /api/template-items/:uuid    (update)
  *
  * Responses are wrapped as `{ ok: true, data }` by the global
  * TransformInterceptor, matching the contract the React frontend expects.
@@ -36,7 +37,10 @@ export class TemplateItemController {
     return this.service.create(dto);
   }
 
-  @Patch(':uuid')
+  // Update via POST (this template's REST surface is GET + POST only).
+  // 200, not 201 — this updates an existing resource rather than creating one.
+  @Post(':uuid')
+  @HttpCode(HttpStatus.OK)
   update(
     @Param('uuid', ParseUUIDPipe) uuid: string,
     @Body() dto: UpdateTemplateItemDto,

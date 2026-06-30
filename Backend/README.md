@@ -169,7 +169,7 @@ Endpoints:
 - `GET    /api/template/meta` — stack metadata for the frontend
 - `GET    /api/template-items?status=&limit=` — list example items
 - `POST   /api/template-items` — create (validated)
-- `PATCH  /api/template-items/:uuid` — partial update
+- `POST   /api/template-items/:uuid` — update (partial; this API is GET + POST only)
 - `POST   /api/auth/register` — create a user
 - `POST   /api/auth/login` — returns `{ accessToken, user }`
 - `GET    /api/auth/me` — current user (protected; send `Authorization: Bearer <token>`)
