@@ -18,11 +18,31 @@ Suggested starting content:
 Use this file for short, high-signal handoff notes only. Put long implementation
 history in `AI_ProgressTracking.md`.
 
-## Onboarding (for AI coding assistants)
+## Onboarding (for AI coding assistants) — READ FIRST
 
-- **First, confirm server ports with the dev** (backend default 3000, frontend
-  default 5173) before doing other work, then apply any change across the config
-  files. Full instructions + the port→file map are in `CLAUDE.md` at the repo root.
+Before writing or changing any code for a project built from this template,
+**ask the developer to confirm the two server ports** and act on their answer:
+
+1. Backend (API) port — default `3000`
+2. Frontend (dev server) port — default `5173`
+
+Ask explicitly, e.g. *"Before we start — what ports should the backend and
+frontend run on? Defaults are 3000 (API) and 5173 (frontend). Keep or change?"*
+Wait for the answer. If they keep the defaults, do nothing. If they change a
+port, update **all** the wired locations yourself (they must stay in sync):
+
+- **Backend port → `<API>`:** `Backend/config.json` `app.port`; `Frontend/public/config.json` `api.base_url` = `http://localhost:<API>`; `Frontend/public/config.example.json` (keep in sync).
+- **Frontend port → `<WEB>`:** `Frontend/vite.config.ts` `server.port`; `Backend/config.json` `cors.origins` must include `http://localhost:<WEB>`; `Backend/config.example.json` (keep in sync).
+
+Notes: `config.json` is gitignored (local); the `*.example.json` files are
+committed — update both. Env vars override config at runtime (`PORT`,
+`CORS_ORIGINS`, `DATABASE_*`, `AUTH_JWT_SECRET`; see `Backend/.env.example`).
+Restart the servers after changing ports.
+
+(Scripts: run `wizard.bat`/`wizard.sh` once after cloning — it creates the root
+`run_windows.bat`/`run_linux.sh` (dev) for the chosen OS. `scripts/` has
+`server_*` to build + host on a server and `pull_*`/`pull_run_*` to update a
+deployed clone.)
 
 ## Template Baseline
 
@@ -69,7 +89,12 @@ history in `AI_ProgressTracking.md`.
   - `GET|POST /api/template-items`, `POST /api/template-items/:uuid` (update) — REST surface is GET + POST only
   - `POST /api/auth/register|login`, `GET /api/auth/me`
 - Swagger UI at `/api/docs`.
-- `npm run dev` (backend, watch) / `npm run dev` (frontend) / `run.bat` (both on Windows).
+- Scripts (OS-named, wizard-driven): root ships `wizard.bat` / `wizard.sh` — run
+  once, pick Windows/Linux/Both, and it creates the root `run_windows.bat` /
+  `run_linux.sh` (dev launcher) by copying from `scripts/launchers/`. `scripts/`
+  also has `server_*` (build + run in prod for hosting) and `pull_*` /
+  `pull_run_*` (update a deployed clone); helper units in `scripts/lib/`. The
+  generated root run scripts are gitignored.
 - Production: `npm run build` → `npm run migration:run` → `npm run start:prod` (no Docker — removed per Ote's decision).
 
 ## Key Files

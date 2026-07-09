@@ -14,11 +14,18 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: true,
+    host: true, // bind 0.0.0.0 so the dev server is reachable from other hosts
     port: 5173,
+    allowedHosts: true, // accept requests for any Host header (e.g. a server domain)
     // proxy: {
     //   '/api': { target: 'http://localhost:3000', changeOrigin: true },
     // },
+  },
+  preview: {
+    // `vite preview` serves the production build (used by scripts/server_*).
+    host: true,
+    port: 4173,
+    allowedHosts: true,
   },
   build: {
     outDir: 'dist',

@@ -23,9 +23,11 @@ communicate over HTTP with CORS. This mirrors how most production teams deploy
 ## Layout
 
 ```text
-Backend/      NestJS API (port 3000, routes under /api)
-Frontend/     React + Vite SPA (port 5173 dev)
-run.bat       launches both dev servers (Windows)
+Backend/          NestJS API (port 3000, routes under /api)
+Frontend/         React + Vite SPA (port 5173 dev)
+wizard.bat / wizard.sh   run once after cloning — creates your root run script
+scripts/          launchers/ (run-script templates), server_*, pull_*, pull_run_*
+scripts/lib/      helper units (install_*, build_*) used by the above
 AI_CarryOn.md / AI_ProgressTracking.md / AI_TemplateCreation.md
 ```
 
@@ -51,9 +53,34 @@ AI_CarryOn.md / AI_ProgressTracking.md / AI_TemplateCreation.md
 3. Open `http://localhost:5173`. The overview page reads `/api/template/meta`;
    the Items page does live CRUD against `/api/template-items`.
 
-On Windows you can also double-click **`run.bat`** to launch both at once.
+Fastest path: run the **wizard** once, then use the run script it creates —
+double-click **`wizard.bat`**, pick your OS, then double-click the generated
+**`run_windows.bat`**. (Linux/macOS: `bash wizard.sh` then `bash run_linux.sh`.)
+The wizard just copies a launcher from `scripts/launchers/` to the repo root, so
+you end up with a single run file for your OS.
 
 > PowerShell note: if `npm` is blocked by execution policy, use `npm.cmd`.
+
+## Running on a server (production)
+
+To host a clone on a server, use the **server** scripts in `scripts/` instead of
+the dev launcher — they install, build backend + frontend, run migrations, then
+run in production mode (Vite is configured to accept all hosts):
+
+```bat
+scripts\server_windows.bat        REM Linux/macOS: bash scripts/server_linux.sh
+```
+
+Keeping a deployed clone up to date:
+
+```bat
+scripts\pull_windows.bat          REM git pull only
+scripts\pull_run_windows.bat      REM git pull, then build + run
+```
+
+For a long-running service, run the API under a process manager (pm2, or
+nssm/Task Scheduler on Windows; systemd on Linux) rather than a console window,
+and set `api.base_url` (Frontend) + `cors.origins` (Backend) for the public host.
 
 ## How the two apps connect
 
