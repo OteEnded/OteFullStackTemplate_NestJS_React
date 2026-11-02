@@ -1,4 +1,8 @@
 {
   "extends": "./tsconfig.json",
+  // Not incremental: nest-cli.json has deleteOutDir, so a .tsbuildinfo kept
+  // outside dist/ made every 2nd `npm run build` emit an EMPTY dist/ (tsc thought
+  // the deleted output was still up to date). Editor/tsc --noEmit stay incremental.
+  "compilerOptions": { "incremental": false },
   "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
 }
