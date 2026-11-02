@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import configuration, { AppConfiguration } from './config/configuration';
 import { CronModule } from './common/cron/cron.module';
+import { GetPostOnlyModule } from './common/rest-surface/get-post-only.module';
 import { WebsocketModule } from './common/websocket/websocket.module';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -39,6 +40,8 @@ import { TemplateItemModule } from './modules/template-item/template-item.module
         };
       },
     }),
+    // ⭐ GET + POST only — refuses to boot if a controller uses PATCH/PUT/DELETE.
+    GetPostOnlyModule,
     DatabaseModule,
     HealthModule,
     TemplateItemModule,
