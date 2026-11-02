@@ -1,13 +1,12 @@
 import 'reflect-metadata';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger as PinoLogger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { configureApp } from './app.setup';
 import { AppConfiguration, loadAppConfig } from './config/configuration';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { ensureSchema } from './database/ensure-schema';
 
 async function bootstrap() {
@@ -27,26 +26,14 @@ async function bootstrap() {
   const appConfig = configService.get('app', { infer: true });
   const corsConfig = configService.get('cors', { infer: true });
 
-  app.setGlobalPrefix('api');
+  // /api prefix, validation, { ok, data } / { ok: false, message } envelopes.
+  configureApp(app);
 
   app.enableCors({
     origin: corsConfig.origins.includes('*') ? true : corsConfig.origins,
     methods: ['GET', 'POST', 'OPTIONS'],
     credentials: true,
   });
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // strip unknown properties
-      forbidNonWhitelisted: false,
-      transform: true, // coerce payloads/query into DTO types
-      transformOptions: { enableImplicitConversion: true },
-    }),
-  );
-
-  // Request logging is handled by pino-http (see LoggerModule in AppModule).
-  app.useGlobalInterceptors(new TransformInterceptor());
-  app.useGlobalFilters(new HttpExceptionFilter());
 
   // Interactive API docs at /api/docs (Swagger UI). DTOs are documented
   // automatically by the @nestjs/swagger CLI plugin (see nest-cli.json).

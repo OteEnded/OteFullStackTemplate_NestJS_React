@@ -1,9 +1,8 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
-import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
-import { TransformInterceptor } from '../src/common/interceptors/transform.interceptor';
+import { configureApp } from '../src/app.setup';
 
 /**
  * End-to-end test: boots the real AppModule (Express + TypeORM) and drives it
@@ -22,13 +21,8 @@ describe('App (e2e)', () => {
     }).compile();
 
     app = moduleRef.createNestApplication();
-    // Mirror main.ts so the e2e behaves like the real server.
-    app.setGlobalPrefix('api');
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true, transformOptions: { enableImplicitConversion: true } }),
-    );
-    app.useGlobalInterceptors(new TransformInterceptor());
-    app.useGlobalFilters(new HttpExceptionFilter());
+    // Same contract setup as main.ts (shared, so the two cannot drift).
+    configureApp(app);
     await app.init();
   });
 
