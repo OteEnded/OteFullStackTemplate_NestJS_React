@@ -1,3 +1,4 @@
+import { ServiceUnavailableException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { HealthCheckService, TypeOrmHealthIndicator } from '@nestjs/terminus';
@@ -37,6 +38,19 @@ describe('HealthController', () => {
     const { controller, db } = await build(false);
     await controller.check();
     expect(db.pingCheck).not.toHaveBeenCalled();
+  });
+
+  it('a failed check becomes 503 with own code db_down + the report as data', async () => {
+    const { controller, health } = await build(true);
+    const report = { status: 'error', info: {}, error: { database: { status: 'down' } }, details: {} };
+    health.check.mockRejectedValueOnce(new ServiceUnavailableException(report));
+    const err = await controller.check().catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ServiceUnavailableException);
+    expect((err as ServiceUnavailableException).getResponse()).toEqual({
+      message: 'Database unreachable',
+      code: 'db_down',
+      data: report,
+    });
   });
 
   it('meta() describes the NestJS + TypeORM stack', async () => {

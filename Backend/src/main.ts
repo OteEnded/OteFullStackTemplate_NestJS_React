@@ -26,7 +26,7 @@ async function bootstrap() {
   const appConfig = configService.get('app', { infer: true });
   const corsConfig = configService.get('cors', { infer: true });
 
-  // /api prefix, validation, { ok, data } / { ok: false, message } envelopes.
+  // /api prefix, validation, { ok, data } / { ok: false, message, code } envelopes.
   configureApp(app);
 
   app.enableCors({

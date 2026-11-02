@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   HealthCheck,
@@ -22,12 +22,27 @@ export class HealthController {
    */
   @Get('health')
   @HealthCheck()
-  check() {
+  async check() {
     const dbEnabled = this.configService.get('database', { infer: true }).enabled;
     const indicators = dbEnabled
       ? [() => this.db.pingCheck('database', { timeout: 2000 })]
       : [];
-    return this.health.check(indicators);
+    try {
+      return await this.health.check(indicators);
+    } catch (err) {
+      // terminus throws a 503 carrying the indicator report. Re-throw it with a
+      // client-safe message + own code, so the error filter keeps them (instead
+      // of the generic internal_error) and passes the report on as `data`:
+      //   503 { ok: false, message, code: 'db_down', request_id, data: { status, info, error, details } }
+      if (err instanceof ServiceUnavailableException) {
+        throw new ServiceUnavailableException({
+          message: 'Database unreachable',
+          code: 'db_down',
+          data: err.getResponse(),
+        });
+      }
+      throw err;
+    }
   }
 
   /**

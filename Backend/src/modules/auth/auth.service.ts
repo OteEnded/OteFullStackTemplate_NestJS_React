@@ -56,7 +56,9 @@ export class AuthService {
       .getOne();
 
     if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
-      throw new UnauthorizedException('invalid credentials');
+      // Own code (not the default 401 `not_signed_in`) so the login page can
+      // tell "wrong password" from "session expired". Same code as Fastify v2.
+      throw new UnauthorizedException({ message: 'invalid credentials', code: 'invalid_credentials' });
     }
 
     const payload: JwtPayload = { sub: user.uuid, username: user.username };

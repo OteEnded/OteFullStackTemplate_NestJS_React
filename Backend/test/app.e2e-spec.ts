@@ -42,12 +42,48 @@ describe('App (e2e)', () => {
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 
-  it('rejects an invalid status on create (400 + ok:false)', async () => {
+  it('rejects an invalid status on create (400 invalid_request + details)', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/template-items')
       .send({ name: 'e2e', status: 'nope' })
       .expect(400);
     expect(res.body.ok).toBe(false);
+    expect(res.body.code).toBe('invalid_request');
+    expect(res.body.details).toEqual([
+      expect.objectContaining({ field: 'status', message: expect.any(String) }),
+    ]);
+  });
+
+  it('update of an unknown uuid -> 404 not_found', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/template-items/00000000-0000-4000-8000-000000000000')
+      .send({ name: 'nobody' })
+      .expect(404);
+    expect(res.body).toEqual({ ok: false, message: 'item not found', code: 'not_found' });
+  });
+
+  it('a non-uuid :uuid param -> 400 invalid_request', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/template-items/not-a-uuid')
+      .send({ name: 'x' })
+      .expect(400);
+    expect(res.body).toMatchObject({ ok: false, code: 'invalid_request' });
+  });
+
+  it('registering an existing username -> 409 conflict', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({ username: 'admin', password: 'whatever-123' })
+      .expect(409);
+    expect(res.body).toMatchObject({ ok: false, code: 'conflict' });
+  });
+
+  it('wrong password -> 401 invalid_credentials', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ username: 'admin', password: 'wrong-password' })
+      .expect(401);
+    expect(res.body).toEqual({ ok: false, message: 'invalid credentials', code: 'invalid_credentials' });
   });
 
   it('logs in the demo user and reads the protected /me route', async () => {
@@ -65,7 +101,15 @@ describe('App (e2e)', () => {
     expect(me.body.data.username).toBe('admin');
   });
 
-  it('rejects /me without a token (401)', async () => {
-    await request(app.getHttpServer()).get('/api/auth/me').expect(401);
+  it('rejects /me without a token (401 not_signed_in)', async () => {
+    const res = await request(app.getHttpServer()).get('/api/auth/me').expect(401);
+    expect(res.body).toMatchObject({ ok: false, code: 'not_signed_in' });
+  });
+
+  it('DELETE is not a route at all (404 not_found envelope)', async () => {
+    const res = await request(app.getHttpServer())
+      .delete('/api/template-items/00000000-0000-4000-8000-000000000000')
+      .expect(404);
+    expect(res.body).toMatchObject({ ok: false, code: 'not_found' });
   });
 });
