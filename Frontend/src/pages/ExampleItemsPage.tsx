@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { apiUrl } from '../config';
+import { ApiError, errorMessage, getJson, postJson } from '../api';
 
 type TemplateItem = {
   uuid: string;
@@ -12,72 +12,98 @@ type TemplateItem = {
   updatedAt: string;
 };
 
-const EMPTY_FORM = {
+type ItemForm = {
+  name: string;
+  summary: string;
+  status: TemplateItem['status'];
+  priority: TemplateItem['priority'];
+};
+
+const EMPTY_FORM: ItemForm = {
   name: '',
   summary: '',
   status: 'draft',
   priority: 'medium',
 };
 
+const formOf = (item: TemplateItem): ItemForm => ({
+  name: item.name,
+  summary: item.summary,
+  status: item.status,
+  priority: item.priority,
+});
+
+const fetchItems = () => getJson<TemplateItem[]>('/api/template-items?limit=100');
+
+/** Validation errors carry field-level `details`; show them, else the message. */
+const describeError = (err: unknown): string => {
+  if (err instanceof ApiError && err.code === 'invalid_request' && Array.isArray(err.details)) {
+    const fields = (err.details as Array<{ field: string; message: string }>).map((d) => d.message);
+    if (fields.length) return fields.join(' · ');
+  }
+  return errorMessage(err);
+};
+
 export default function ExampleItemsPage() {
   const [items, setItems] = useState<TemplateItem[]>([]);
   const [selectedUuid, setSelectedUuid] = useState<string | null>(null);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState<ItemForm>(EMPTY_FORM);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
   const selectedItem = items.find((item) => item.uuid === selectedUuid) || null;
 
-  const loadItems = async () => {
-    setLoading(true);
-    setError('');
+  const selectItem = (item: TemplateItem) => {
+    setSelectedUuid(item.uuid);
+    setForm(formOf(item));
+  };
 
-    try {
-      const response = await fetch(apiUrl('/api/template-items?limit=100'));
-      const result = await response.json();
-
-      if (!response.ok || !result?.ok) {
-        throw new Error(result?.message || 'Failed to load example items');
-      }
-
-      const rows: TemplateItem[] = result.data || [];
-      setItems(rows);
-
-      if (rows.length > 0 && !selectedUuid) {
-        setSelectedUuid(rows[0].uuid);
-        setForm({
-          name: rows[0].name,
-          summary: rows[0].summary,
-          status: rows[0].status,
-          priority: rows[0].priority,
-        });
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unexpected error');
-      setItems([]);
-    } finally {
-      setLoading(false);
+  const showItems = (rows: TemplateItem[]) => {
+    setItems(rows);
+    setLoading(false);
+    if (rows.length > 0 && !selectedUuid) {
+      selectItem(rows[0]);
     }
   };
 
+  const showLoadError = (err: unknown) => {
+    setError(describeError(err));
+    setItems([]);
+    setLoading(false);
+  };
+
+  const loadItems = () => {
+    setLoading(true);
+    setError('');
+    fetchItems().then(showItems, showLoadError);
+  };
+
+  // Initial load. State is only set in the promise callbacks (not synchronously
+  // in the effect body), and the result is ignored if the page unmounted.
   useEffect(() => {
-    void loadItems();
+    let active = true;
+    fetchItems().then(
+      (rows) => {
+        if (!active) return;
+        setItems(rows);
+        setLoading(false);
+        if (rows.length > 0) {
+          setSelectedUuid(rows[0].uuid);
+          setForm(formOf(rows[0]));
+        }
+      },
+      (err: unknown) => {
+        if (!active) return;
+        setError(describeError(err));
+        setLoading(false);
+      },
+    );
+    return () => {
+      active = false;
+    };
   }, []);
-
-  useEffect(() => {
-    if (!selectedItem) {
-      return;
-    }
-
-    setForm({
-      name: selectedItem.name,
-      summary: selectedItem.summary,
-      status: selectedItem.status,
-      priority: selectedItem.priority,
-    });
-  }, [selectedItem?.uuid]);
 
   const saveNewItem = async () => {
     if (!form.name.trim()) {
@@ -90,24 +116,12 @@ export default function ExampleItemsPage() {
     setMessage('');
 
     try {
-      const response = await fetch(apiUrl('/api/template-items'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      const result = await response.json();
-
-      if (!response.ok || !result?.ok) {
-        throw new Error(result?.message || 'Failed to create item');
-      }
-
-      const created: TemplateItem = result.data;
-      const nextItems = [created, ...items];
-      setItems(nextItems);
-      setSelectedUuid(created.uuid);
+      const created = await postJson<TemplateItem>('/api/template-items', form);
+      setItems((current) => [created, ...current]);
+      selectItem(created);
       setMessage('Created a new example item. Replace this flow with your own domain create action.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unexpected error');
+      setError(describeError(err));
     } finally {
       setSaving(false);
     }
@@ -124,22 +138,12 @@ export default function ExampleItemsPage() {
     setMessage('');
 
     try {
-      const response = await fetch(apiUrl(`/api/template-items/${selectedUuid}`), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      const result = await response.json();
-
-      if (!response.ok || !result?.ok) {
-        throw new Error(result?.message || 'Failed to update item');
-      }
-
-      const updated: TemplateItem = result.data;
+      // Update is POST /:uuid — the API is GET + POST only.
+      const updated = await postJson<TemplateItem>(`/api/template-items/${selectedUuid}`, form);
       setItems((current) => current.map((item) => item.uuid === updated.uuid ? updated : item));
       setMessage('Updated the selected example item.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unexpected error');
+      setError(describeError(err));
     } finally {
       setSaving(false);
     }
@@ -155,7 +159,7 @@ export default function ExampleItemsPage() {
             This page demonstrates the full-stack path: React form state, NestJS API routes, a TypeORM entity, and DB seed data.
           </p>
         </div>
-        <button className="secondary-btn" onClick={() => void loadItems()} disabled={loading}>
+        <button className="secondary-btn" onClick={loadItems} disabled={loading}>
           {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </article>
@@ -176,7 +180,7 @@ export default function ExampleItemsPage() {
               <button
                 key={item.uuid}
                 className={item.uuid === selectedUuid ? 'item-card active' : 'item-card'}
-                onClick={() => setSelectedUuid(item.uuid)}
+                onClick={() => selectItem(item)}
               >
                 <strong>{item.name}</strong>
                 <span>{item.summary || 'No summary yet.'}</span>
@@ -218,7 +222,7 @@ export default function ExampleItemsPage() {
               <span>Status</span>
               <select
                 value={form.status}
-                onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as 'draft' | 'active' | 'archived' }))}
+                onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as ItemForm['status'] }))}
               >
                 <option value="draft">draft</option>
                 <option value="active">active</option>
@@ -230,7 +234,7 @@ export default function ExampleItemsPage() {
               <span>Priority</span>
               <select
                 value={form.priority}
-                onChange={(event) => setForm((current) => ({ ...current, priority: event.target.value as 'low' | 'medium' | 'high' }))}
+                onChange={(event) => setForm((current) => ({ ...current, priority: event.target.value as ItemForm['priority'] }))}
               >
                 <option value="low">low</option>
                 <option value="medium">medium</option>

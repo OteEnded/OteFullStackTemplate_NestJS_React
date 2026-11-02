@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ApiError, errorMessage } from '../api';
 import { type AuthUser, clearToken, fetchMe, getToken, login } from '../auth';
 
 /**
@@ -28,7 +29,12 @@ export default function LoginPage() {
       const { user: loggedIn } = await login(username.trim(), password);
       setUser(loggedIn);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      // Branch on the stable `code`, not on the message text.
+      setError(
+        err instanceof ApiError && err.code === 'invalid_credentials'
+          ? 'Wrong username or password.'
+          : errorMessage(err),
+      );
       setUser(null);
     } finally {
       setBusy(false);
