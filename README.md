@@ -91,6 +91,15 @@ and set `api.base_url` (Frontend) + `cors.origins` (Backend) for the public host
 - Because the API URL is runtime config (not baked into the bundle), a built
   frontend can be repointed at a different API by editing one file.
 
+## API contract
+
+- Success `{ ok: true, data }`, error `{ ok: false, message, code }` (+ `details` on
+  validation errors, + `request_id` on server errors). Branch on `code`.
+- **GET + POST only, enforced at boot** — the backend refuses to start if a
+  controller uses PATCH/PUT/DELETE; use `POST /x/:uuid` or `POST /x/:uuid/<action>`.
+- Frontend calls go through `Frontend/src/api.ts` (`getJson` / `postJson`,
+  `ApiError` with `status` + `code`). Details: `Backend/README.md` → "API response contract".
+
 ## Database
 
 - Enabled by default (this template is built around TypeORM + Postgres).

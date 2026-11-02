@@ -1,7 +1,7 @@
 # AI_CarryOn.md
 
 > Purpose: short handoff for the project being built from this template.
-> Last updated: 2026-06-25
+> Last updated: 2026-11-02
 
 ## Current Goal
 
@@ -17,6 +17,25 @@ Suggested starting content:
 
 Use this file for short, high-signal handoff notes only. Put long implementation
 history in `AI_ProgressTracking.md`.
+
+## Standing rules (always true for this project)
+
+- **API envelope:** success `{ ok: true, data }`; error `{ ok: false, message, code }`
+  (+ `details` [{field, message}] on validation errors, + `request_id` on 5xx).
+  ⭐ Ote, 2026-11-01: *"for api use res shape {ok:true,data} / {ok:false, message, code}"*.
+  `code` is stable and machine-readable (`invalid_request`, `not_signed_in`,
+  `forbidden`, `not_found`, `conflict`, `internal_error`, ...) — the frontend
+  branches on `code`, never on `message`. Written by
+  `Backend/src/common/filters/http-exception.filter.ts`; to expose your own code,
+  throw e.g. `new ConflictException({ message, code: 'username_taken' })`. 5xx
+  never leak internals (generic message + `request_id`; detail is in the log).
+- **GET + POST only — ENFORCED at boot.** ⭐ Ote, 2026-11-01: *"i like GET+POST-only
+  style ... i think this is commom pattern"*. Updates/actions are `POST /x/:uuid` or
+  `POST /x/:uuid/<action>`; no `@Patch`/`@Put`/`@Delete`/`@All`. The app refuses to
+  start otherwise (`Backend/src/common/rest-surface/get-post-only.module.ts`).
+  Frontend calls go through `Frontend/src/api.ts` (`getJson`/`postJson` only).
+- UUID primary key + auto-increment `rollingId` on every entity.
+- Commits: `OteEnded[type]: <outcome sentence>`, no AI attribution.
 
 ## Onboarding (for AI coding assistants) — READ FIRST
 
@@ -78,15 +97,18 @@ deployed clone.)
   Logging is `nestjs-pino` (pretty in dev, JSON in prod; request auto-logging via
   `logging.requests`; auth header/password redacted) — set up in `app.module.ts`,
   wired in `main.ts` via `app.useLogger`.
-- **Tests:** `npm test` (Jest) — 10 unit tests (template-item service, health,
-  auth controller), no DB needed. `npm run test:e2e` — 5 supertest e2e tests that
-  boot the app (needs a running, migrated DB).
+- **Tests:** `npm test` (Jest) — 28 unit tests (error envelope per error path,
+  GET+POST boot check, template-item service, health, auth controller), no DB
+  needed. `npm run test:e2e` — 14 supertest e2e tests that boot the real
+  AppModule (envelope codes, GET+POST boot refusal; needs a running, migrated DB).
+- **Frontend API client:** `Frontend/src/api.ts` — `getJson`/`postJson`, typed
+  `ApiError { status, code, details, requestId }`, Bearer token from `src/token.ts`.
 - **Frontend auth:** `Frontend/src/pages/LoginPage.tsx` + `src/auth.ts` exercise
   login + the protected `/me` route (token in localStorage).
 - Example endpoints:
   - `GET /api/health` (real DB ping)
   - `GET /api/template/meta`
-  - `GET|POST /api/template-items`, `POST /api/template-items/:uuid` (update) — REST surface is GET + POST only
+  - `GET|POST /api/template-items`, `POST /api/template-items/:uuid` (update) — GET + POST only, enforced at boot
   - `POST /api/auth/register|login`, `GET /api/auth/me`
 - Swagger UI at `/api/docs`.
 - Scripts (OS-named, wizard-driven): root ships `wizard.bat` / `wizard.sh` — run
@@ -99,12 +121,16 @@ deployed clone.)
 
 ## Key Files
 
-- `Backend/src/main.ts` — bootstrap (CORS, `/api` prefix, validation, Swagger, filters)
+- `Backend/src/main.ts` — bootstrap (CORS, Swagger, listen)
+- `Backend/src/app.setup.ts` — `configureApp()`: `/api` prefix, validation, both envelopes (shared by main.ts + e2e)
+- `Backend/src/common/filters/http-exception.filter.ts` — the error envelope + codes
+- `Backend/src/common/rest-surface/get-post-only.module.ts` — GET + POST boot check
 - `Backend/src/config/configuration.ts` — config.json + env overrides
 - `Backend/src/database/` — TypeORM module, data-source, entities (TemplateItem, User), seeds, migrations (InitSchema), `schemas.ts` (per-entity schema constant)
 - `Backend/src/modules/template-item/` — example resource to replace
 - `Backend/src/modules/auth/` — optional JWT auth example (remove if unused)
 - `Backend/config.example.json` — committed config template
+- `Frontend/src/api.ts` — the API client (envelope, ApiError with `code`)
 - `Frontend/src/config.ts` — API base-URL resolution
 - `Frontend/public/config.json` — runtime API origin
 - `Frontend/src/pages/ExampleItemsPage.tsx` — example CRUD UI

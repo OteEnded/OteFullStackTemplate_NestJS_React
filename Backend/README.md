@@ -145,11 +145,13 @@ src/
     health/                   terminus /api/health (DB ping) + /api/template/meta
   common/
     interceptors/             response wrapper ({ ok, data })
-    filters/                  error wrapper ({ ok:false, message })
+    filters/                  error wrapper ({ ok:false, message, code })
+    rest-surface/             GET + POST only, checked at boot
     cron/                     @nestjs/schedule scaffold
     websocket/                socket.io gateway scaffold
 test/
   app.e2e-spec.ts             supertest e2e (boots the app; needs a DB)
+  get-post-only.e2e-spec.ts   AppModule + a @Delete/@Patch/@Put route must fail to boot
   jest-e2e.json
 ```
 
@@ -159,9 +161,32 @@ an interceptor.
 ## API response contract
 
 Every success is wrapped as `{ "ok": true, "data": ... }`; every error as
-`{ "ok": false, "statusCode": n, "message": "..." }`. This matches the shared
-React frontend (and the Fastify template), so the same UI works against either
-backend.
+`{ "ok": false, "message": "...", "code": "..." }` — the same contract as the
+Fastify template v2, so the same UI works against either backend. The HTTP status
+is the status; `code` is a stable machine-readable string to branch on.
+
+| Situation | Status | `code` | Extra |
+|---|---|---|---|
+| DTO validation failed | 400 | `invalid_request` | `details: [{ field, message }]` |
+| Malformed JSON / bad `:uuid` | 400 | `invalid_request` | |
+| No / bad Bearer token | 401 | `not_signed_in` | |
+| Wrong username or password | 401 | `invalid_credentials` | |
+| Forbidden | 403 | `forbidden` | |
+| Unknown route or row | 404 | `not_found` | |
+| Duplicate (e.g. username) | 409 | `conflict` | |
+| DB unreachable (`/api/health`) | 503 | `db_down` | `request_id`, `data` = terminus report |
+| Any other server error | 500 | `internal_error` | `request_id`; message is always "Internal server error" |
+
+To expose your own code, put it in the exception's response:
+`throw new ConflictException({ message: 'Name already used', code: 'name_taken' })`.
+A 5xx without its own code never reaches the client with its real message — the
+stack/SQL goes to the log under the same `request_id`.
+
+**GET + POST only, enforced.** Updates and actions are `POST /x/:uuid` or
+`POST /x/:uuid/<action>`. `GetPostOnlyModule` checks every controller route at
+boot and the app **refuses to start** if one uses `@Patch`, `@Put`, `@Delete` or
+`@All` (HEAD/OPTIONS are fine). Ote, 2026-11-01: *"i like GET+POST-only style ...
+i think this is commom pattern"*.
 
 Endpoints:
 
